@@ -44,16 +44,26 @@ class DatabaseService:
         )
 
         return response.data
-    def get_reports(self):
-        response = (
+    def get_reports(self, patient_name: str | None = None):
+        query = (
             self.client
             .table("clinical_reports")
             .select("*")
+        )
+
+        if patient_name:
+            query = query.ilike(
+                "report->patient_information->>name",
+                f"%{patient_name}%"
+            )
+
+        response = (
+            query
             .order("created_at", desc=True)
             .execute()
         )
-        return response.data
 
+        return response.data
     def get_report_by_id(self, report_id: str):
         response = (
             self.client

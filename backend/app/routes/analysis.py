@@ -2,7 +2,14 @@ import os
 import tempfile
 import shutil
 
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    status,
+    UploadFile,
+    File,
+    Query,
+)
 
 from app.schemas import (
     AnalyzeRequest,
@@ -192,11 +199,16 @@ def analyze_clinical_pdf(
     response_model=list[ClinicalReportRecord],
     status_code=status.HTTP_200_OK,
     summary="Get Clinical Report History",
-    description="Returns all saved clinical reports ordered from newest to oldest.",
+    description="Returns saved clinical reports, optionally filtered by patient name.",
 )
-def get_clinical_reports() -> list[ClinicalReportRecord]:
+def get_clinical_reports(
+    patient_name: str | None = Query(
+        default=None,
+        description="Search reports by patient name",
+    ),
+) -> list[ClinicalReportRecord]:
     try:
-        rows = database_service.get_reports()
+        rows = database_service.get_reports(patient_name)
 
         return [
             ClinicalReportRecord.model_validate(row)
@@ -207,31 +219,4 @@ def get_clinical_reports() -> list[ClinicalReportRecord]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve clinical reports: {str(e)}",
-        )
-@router.get(
-    "/reports/{report_id}",
-    response_model=ClinicalReportRecord,
-    status_code=status.HTTP_200_OK,
-    summary="Get Clinical Report",
-    description="Returns a single saved clinical report by ID.",
-)
-def get_clinical_report(report_id: UUID) -> ClinicalReportRecord:
-    try:
-        row = database_service.get_report_by_id(str(report_id))
-
-        if row is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Clinical report not found.",
-            )
-
-        return ClinicalReportRecord.model_validate(row)
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve clinical report: {str(e)}",
         )
