@@ -9,11 +9,13 @@ from app.schemas import AnalyzeRequest, ClinicalReport
 from app.services import AIService, AIServiceError
 from app.services.ocr_service import OCRService
 from app.services.pdf_service import PDFService
+from app.services.database_service import DatabaseService
 
 router = APIRouter(prefix="/api", tags=["Analysis"])
 ai_service = AIService()
 ocr_service = OCRService()
 pdf_service = PDFService(ocr_service)
+database_service = DatabaseService()
 
 
 @router.post(
@@ -26,6 +28,14 @@ pdf_service = PDFService(ocr_service)
 def analyze_clinical_text(payload: AnalyzeRequest) -> ClinicalReport:
     try:
         report = ai_service.analyze_clinical_text(payload.text)
+
+        database_service.save_report(
+            source_type="text",
+            original_filename=None,
+            extracted_text=payload.text,
+            report=report.model_dump(),
+        )
+
         return report
     except AIServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
@@ -78,6 +88,13 @@ def analyze_clinical_image(
             )
 
         report = ai_service.analyze_clinical_text(extracted_text)
+
+        database_service.save_report(
+            source_type="image",
+            original_filename=file.filename,
+            extracted_text=extracted_text,
+            report=report.model_dump(),
+        )
 
         return report
 
@@ -137,6 +154,13 @@ def analyze_clinical_pdf(
             )
 
         report = ai_service.analyze_clinical_text(extracted_text)
+
+        database_service.save_report(
+            source_type="pdf",
+            original_filename=file.filename,
+            extracted_text=extracted_text,
+            report=report.model_dump(),
+        )
 
         return report
 
