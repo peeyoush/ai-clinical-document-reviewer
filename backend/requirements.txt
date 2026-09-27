@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+google-genai
+pydantic
+paddlepaddle==3.2.2
+paddleocr==3.7.0
+python-multipart
+pypdf
+PyMuPDF
