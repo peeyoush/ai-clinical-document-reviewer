@@ -4,7 +4,12 @@ import shutil
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
 
-from app.schemas import AnalyzeRequest, ClinicalReport
+from app.schemas import (
+    AnalyzeRequest,
+    ClinicalReport,
+    ClinicalReportRecord,
+)
+from uuid import UUID
 
 from app.services import AIService, AIServiceError
 from app.services.ocr_service import OCRService
@@ -182,3 +187,51 @@ def analyze_clinical_pdf(
     finally:
         if temporary_path and os.path.exists(temporary_path):
             os.remove(temporary_path)
+@router.get(
+    "/reports",
+    response_model=list[ClinicalReportRecord],
+    status_code=status.HTTP_200_OK,
+    summary="Get Clinical Report History",
+    description="Returns all saved clinical reports ordered from newest to oldest.",
+)
+def get_clinical_reports() -> list[ClinicalReportRecord]:
+    try:
+        rows = database_service.get_reports()
+
+        return [
+            ClinicalReportRecord.model_validate(row)
+            for row in rows
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve clinical reports: {str(e)}",
+        )
+@router.get(
+    "/reports/{report_id}",
+    response_model=ClinicalReportRecord,
+    status_code=status.HTTP_200_OK,
+    summary="Get Clinical Report",
+    description="Returns a single saved clinical report by ID.",
+)
+def get_clinical_report(report_id: UUID) -> ClinicalReportRecord:
+    try:
+        row = database_service.get_report_by_id(str(report_id))
+
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Clinical report not found.",
+            )
+
+        return ClinicalReportRecord.model_validate(row)
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve clinical report: {str(e)}",
+        )

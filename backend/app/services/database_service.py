@@ -1,4 +1,5 @@
 import os
+from urllib import response
 
 from dotenv import load_dotenv
 from supabase import create_client
@@ -43,3 +44,26 @@ class DatabaseService:
         )
 
         return response.data
+    def get_reports(self):
+        response = (
+            self.client
+            .table("clinical_reports")
+            .select("*")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return response.data
+
+    def get_report_by_id(self, report_id: str):
+        response = (
+            self.client
+            .table("clinical_reports")
+            .select("*")
+            .eq("id", report_id)
+            .execute()
+        )
+
+        if not response.data:
+            return None
+
+        return response.data[0]

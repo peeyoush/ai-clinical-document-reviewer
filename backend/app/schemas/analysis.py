@@ -1,6 +1,10 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
+from datetime import datetime
+from uuid import UUID
+
+from typing import Literal
 
 class AnalyzeRequest(BaseModel):
     text: str = Field(
@@ -81,3 +85,10 @@ class ClinicalReport(BaseModel):
         default_factory=list,
         description="Uncertain, vague, or critical items needing clinician verification",
     )
+class ClinicalReportRecord(BaseModel):
+    id: UUID
+    source_type: Literal["text", "image", "pdf"]
+    original_filename: str | None
+    extracted_text: str | None
+    report: ClinicalReport
+    created_at: datetime
