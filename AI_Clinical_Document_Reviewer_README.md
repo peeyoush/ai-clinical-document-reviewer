@@ -558,6 +558,3 @@ This project was built as an end-to-end AI/ML application to demonstrate:
 
 ---
 
-## License
-
-This project is currently intended as a student/internship project. Add a formal license here if the repository will be distributed or reused publicly.
